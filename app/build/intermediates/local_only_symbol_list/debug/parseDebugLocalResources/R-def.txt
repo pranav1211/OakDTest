@@ -1,0 +1,12 @@
+R_DEF: Internal format may change without notice
+local
+id previewImage
+id previewView
+id refreshBtn
+id statusText
+layout activity_main
+layout activity_stream
+mipmap ic_launcher
+string app_name
+style Theme.OakDTest
+xml device_filter

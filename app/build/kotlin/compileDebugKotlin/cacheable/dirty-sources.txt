@@ -1,0 +1,2 @@
+D:\stuff\OakDTest\app\src\main\java\com\example\oakdtest\MainActivity.kt
+D:\stuff\OakDTest\app\src\main\java\com\example\oakdtest\UsbPermissionReceiver.kt

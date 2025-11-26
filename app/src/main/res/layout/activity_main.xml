@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="16dp"
+              android:background="#121212">
+
+    <!-- Title -->
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="DepthAI v3 Android Test"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:gravity="center"
+            android:paddingBottom="16dp" />
+
+    <!-- Step-by-step buttons -->
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:padding="12dp">
+
+        <Button
+                android:id="@+id/btnCheckLibrary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Step 1: Check Library"
+                android:textAllCaps="false"
+                android:backgroundTint="#424242"
+                android:layout_marginBottom="8dp" />
+
+        <Button
+                android:id="@+id/btnCheckDevices"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Step 2: Check DepthAI Devices"
+                android:textAllCaps="false"
+                android:backgroundTint="#424242"
+                android:layout_marginBottom="8dp" />
+
+        <Button
+                android:id="@+id/btnInitPipeline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Step 3: Initialize Pipeline"
+                android:textAllCaps="false"
+                android:backgroundTint="#424242"
+                android:layout_marginBottom="8dp" />
+
+        <Button
+                android:id="@+id/btnCheckUsbPermissions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Step 4: Check USB Permissions"
+                android:textAllCaps="false"
+                android:backgroundTint="#424242"
+                android:layout_marginBottom="8dp" />
+
+        <Button
+                android:id="@+id/btnStartRgbStream"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Step 5: Start RGB Stream"
+                android:textAllCaps="false"
+                android:backgroundTint="#424242"
+                android:layout_marginBottom="8dp" />
+
+        <Button
+                android:id="@+id/btnStopStream"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Stop Stream"
+                android:textAllCaps="false"
+                android:backgroundTint="#D32F2F" />
+    </LinearLayout>
+
+    <!-- Status text in scrollable view -->
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status Log"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp" />
+
+    <ScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#1E1E1E"
+            android:padding="12dp">
+
+        <TextView
+                android:id="@+id/statusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:fontFamily="monospace"
+                android:textSize="12sp"
+                android:lineSpacingExtra="2dp" />
+    </ScrollView>
+
+    <!-- Image view for RGB stream -->
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RGB Stream Preview"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp" />
+
+    <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#000000">
+
+        <ImageView
+                android:id="@+id/imageView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:contentDescription="RGB camera stream" />
+    </FrameLayout>
+
+</LinearLayout>

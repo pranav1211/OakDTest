@@ -1,0 +1,2 @@
+-keep class org.bytedeco.** { *; }
+-dontwarn org.bytedeco.**

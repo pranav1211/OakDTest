@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "com.example.oakdtest.app-debug-34:/xml_device_filter.xml.flat",
+        "source": "com.example.oakdtest.app-main-36:/xml/device_filter.xml"
+    },
+    {
+        "merged": "com.example.oakdtest.app-debug-34:/mipmap_ic_launcher.png.flat",
+        "source": "com.example.oakdtest.app-main-36:/mipmap/ic_launcher.png"
+    },
+    {
+        "merged": "com.example.oakdtest.app-debug-34:/layout_activity_stream.xml.flat",
+        "source": "com.example.oakdtest.app-main-36:/layout/activity_stream.xml"
+    },
+    {
+        "merged": "com.example.oakdtest.app-debug-34:/layout_activity_main.xml.flat",
+        "source": "com.example.oakdtest.app-main-36:/layout/activity_main.xml"
+    }
+]

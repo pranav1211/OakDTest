@@ -78,6 +78,26 @@
                 android:text="Stop Stream"
                 android:textAllCaps="false"
                 android:backgroundTint="#D32F2F" />
+
+        <Button
+                android:id="@+id/btnDiagnostic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Diagnostics"
+                android:textAllCaps="false"
+                android:backgroundTint="#616161"
+                android:layout_marginTop="8dp" />
+        <Button
+                android:id="@+id/btnStartStream"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Start Stream (Test)" />
+
+        <Button
+                android:id="@+id/btnStopStream"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Stop Stream" />
     </LinearLayout>
 
     <!-- Status text in scrollable view -->

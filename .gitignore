@@ -1,0 +1,11 @@
+# Generated build output
+build/
+**/build/
+
+# Gradle/Kotlin caches
+.gradle/
+.kotlin/
+
+# Local machine/IDE state
+local.properties
+.idea/

@@ -7,17 +7,12 @@
             android:name="android.hardware.usb.host"
             android:required="true" />
 
-    <!-- USB Permissions -->
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.CAMERA" />  <!-- ADD THIS -->
     <uses-permission android:name="android.permission.USB_PERMISSION" />
-
-    <!-- Internet permission if you need network features -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Android 15 specific: Foreground service for camera access -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
-
-    <!-- Wake lock to keep device awake during camera operations -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application

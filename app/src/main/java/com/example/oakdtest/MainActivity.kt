@@ -1,19 +1,17 @@
 package com.example.oakdtest
 
-import android.graphics.Bitmap
-import android.graphics.Color
-import android.hardware.usb.UsbDevice
 import android.os.Bundle
+import android.os.Build
 import android.util.Log
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
+import com.luxonis.depthai.DepthAI
+import com.luxonis.depthai.UsbPermissionManager
+import android.content.Context
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,20 +22,16 @@ class MainActivity : AppCompatActivity() {
     // UI Components
     private lateinit var statusText: TextView
     private lateinit var scrollView: ScrollView
-    private lateinit var imageView: ImageView
 
     private lateinit var btnCheckLibrary: Button
-    private lateinit var btnCheckDevices: Button
-    private lateinit var btnInitPipeline: Button
     private lateinit var btnCheckUsbPermissions: Button
-    private lateinit var btnStartRgbStream: Button
+    private lateinit var btnCheckDevices: Button
+    private lateinit var btnDiagnostic: Button
+    private lateinit var btnStartStream: Button
     private lateinit var btnStopStream: Button
 
-    // USB and DepthAI
+    // USB Manager
     private lateinit var usbPermissionManager: UsbPermissionManager
-    private var deviceHandle: Long = 0L
-    private var isStreaming = false
-    private var streamExecutor: ScheduledExecutorService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,143 +44,195 @@ class MainActivity : AppCompatActivity() {
     private fun initializeUI() {
         statusText = findViewById(R.id.statusText)
         scrollView = findViewById(R.id.scrollView)
-        imageView = findViewById(R.id.imageView)
 
         btnCheckLibrary = findViewById(R.id.btnCheckLibrary)
-        btnCheckDevices = findViewById(R.id.btnCheckDevices)
-        btnInitPipeline = findViewById(R.id.btnInitPipeline)
         btnCheckUsbPermissions = findViewById(R.id.btnCheckUsbPermissions)
-        btnStartRgbStream = findViewById(R.id.btnStartRgbStream)
+        btnCheckDevices = findViewById(R.id.btnCheckDevices)
+        btnDiagnostic = findViewById(R.id.btnDiagnostic)
+        btnStartStream = findViewById(R.id.btnStartStream)
         btnStopStream = findViewById(R.id.btnStopStream)
 
-        // Initially disable all buttons except the first one
+        // ALL BUTTONS ENABLED - Independent testing
         btnCheckLibrary.isEnabled = true
-        btnCheckDevices.isEnabled = false
-        btnInitPipeline.isEnabled = false
-        btnCheckUsbPermissions.isEnabled = false
-        btnStartRgbStream.isEnabled = false
+        btnCheckUsbPermissions.isEnabled = true
+        btnCheckDevices.isEnabled = true
+        btnDiagnostic.isEnabled = true
+        btnStartStream.isEnabled = true
         btnStopStream.isEnabled = false
 
         // Button click listeners
         btnCheckLibrary.setOnClickListener { checkLibrary() }
-        btnCheckDevices.setOnClickListener { checkDevices() }
-        btnInitPipeline.setOnClickListener { initializePipeline() }
         btnCheckUsbPermissions.setOnClickListener { checkUsbPermissions() }
-        btnStartRgbStream.setOnClickListener { startRgbStream() }
+        btnCheckDevices.setOnClickListener { checkDevices() }
+        btnDiagnostic.setOnClickListener { runDiagnostics() }
+        btnStartStream.setOnClickListener { startStream() }
         btnStopStream.setOnClickListener { stopStream() }
 
         appendStatus("Welcome to DepthAI v3 Android Test")
-        appendStatus("Click 'Check Library' to begin\n")
+        appendStatus("All buttons are independent - test anything!\n")
     }
 
     private fun setupUsbManager() {
         usbPermissionManager = UsbPermissionManager(this)
-        usbPermissionManager.registerReceiver()
     }
 
-    // Step 1: Check if JNI library loads correctly
-    private fun checkLibrary() {
-        appendStatus("=== STEP 1: Checking JNI Library ===")
-        try {
-            // Library is already loaded in DepthAI object's init block
-            appendStatus("✓ JNI library loaded successfully")
-            appendStatus("✓ Native methods are available\n")
+    private fun runDiagnostics() {
+        appendStatus("\n=== FULL DIAGNOSTICS ===")
 
-            btnCheckLibrary.isEnabled = false
-            btnCheckDevices.isEnabled = true
-            setButtonColor(btnCheckLibrary, true)
+        val androidSupport = DepthAI.checkAndroidSupport()
+        Log.d("MainActivity", androidSupport)
+
+        // 1. USB Host Support
+        val usbHostSupported = usbPermissionManager.isUsbHostSupported()
+        appendStatus("USB Host Supported: $usbHostSupported")
+
+        // 2. Check all Android permissions
+        appendStatus("\n[Android Permissions]")
+
+        val hasCameraPermission = checkSelfPermission(android.Manifest.permission.CAMERA) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        appendStatus("Camera Permission: $hasCameraPermission")
+
+        if (!hasCameraPermission) {
+            appendStatus("Requesting camera permission...")
+            requestPermissions(arrayOf(android.Manifest.permission.CAMERA), 100)
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            val hasStorageRead = checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+            val hasStorageWrite = checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+            appendStatus("Storage Read: $hasStorageRead")
+            appendStatus("Storage Write: $hasStorageWrite")
+        } else {
+            appendStatus("Storage: Not required on Android 13+")
+        }
+
+        // 3. USB Devices with STATE check
+        appendStatus("\n[USB Devices]")
+        val usbManager = getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
+        val allDevices = usbManager.deviceList
+        appendStatus("Total USB devices: ${allDevices.size}")
+
+        for ((name, device) in allDevices) {
+            appendStatus("  $name:")
+            appendStatus("    Vendor: 0x${device.vendorId.toString(16)}")
+            appendStatus("    Product: 0x${device.productId.toString(16)}")
+            appendStatus("    Device Class: ${device.deviceClass}")
+            appendStatus("    Device Subclass: ${device.deviceSubclass}")
+            appendStatus("    Device Protocol: ${device.deviceProtocol}")
+
+            val hasPermission = usbManager.hasPermission(device)
+            appendStatus("    Has permission: $hasPermission")
+
+            // Identify device state by product ID
+            if (device.vendorId == 0x3e7) {
+                val state = when(device.productId) {
+                    0x2485 -> "UNBOOTED/BOOTLOADER (needs boot)"
+                    0xf63b -> "BOOTED (OAK-D)"
+                    0xf63d -> "BOOTED (OAK-D Pro)"
+                    0xf63c -> "BOOTED (OAK-D Lite)"
+                    else -> "UNKNOWN STATE"
+                }
+                appendStatus("    ⚠ Device State: $state")
+            }
+
+            if (!hasPermission && device.vendorId == 0x3e7) {
+                appendStatus("    ⚠ This is an OAK device - requesting permission...")
+                usbPermissionManager.requestPermission(device) { granted, _ ->
+                    runOnUiThread {
+                        if (granted) {
+                            appendStatus("    ✓ Permission granted!")
+                        } else {
+                            appendStatus("    ✗ Permission denied")
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. OAK Devices
+        val oakDevices = usbPermissionManager.getConnectedOakDevices()
+        appendStatus("\n[OAK Devices]")
+        appendStatus("OAK Devices found: ${oakDevices.size}")
+
+        // 5. DepthAI Library
+        appendStatus("\n[DepthAI Library]")
+        appendStatus("Version: ${DepthAI.getLibraryVersion()}")
+        appendStatus("Library Present: ${DepthAI.isLibraryPresent()}")
+
+        // Get actual device info from DepthAI
+        val devices = DepthAI.getAvailableDevices()
+        appendStatus("Device Count: ${devices.size}")
+
+        if (devices.isNotEmpty()) {
+            for ((index, device) in devices.withIndex()) {
+                appendStatus("\nDepthAI Device $index:")
+                appendStatus("  ID: ${device.deviceId}")
+                appendStatus("  Name: ${device.name}")
+                appendStatus("  Protocol: ${device.protocol}")
+                appendStatus("  State: ${device.state}")
+            }
+        } else {
+            appendStatus("⚠ DepthAI found 0 devices")
+            appendStatus("Possible reasons:")
+            appendStatus("  1. Device in UNBOOTED state (Product ID 0x2485)")
+            appendStatus("  2. Device needs bootloader firmware")
+            appendStatus("  3. libusb access issue")
+        }
+
+        appendStatus("\n=== END DIAGNOSTICS ===\n")
+    }
+
+    private fun checkLibrary() {
+        appendStatus("=== Checking DepthAI Library ===")
+        try {
+            val isPresent = DepthAI.isLibraryPresent()
+
+            if (isPresent) {
+                val version = DepthAI.getLibraryVersion()
+                appendStatus("✓ DepthAI library loaded")
+                appendStatus("✓ Version: $version")
+                appendStatus("✓ Library is functional\n")
+                setButtonColor(btnCheckLibrary, true)
+            } else {
+                appendStatus("✗ Library is not functional\n", true)
+                setButtonColor(btnCheckLibrary, false)
+            }
         } catch (e: Exception) {
-            appendStatus("✗ Failed to load JNI library: ${e.message}\n", true)
+            appendStatus("✗ Failed to check library: ${e.message}\n", true)
             setButtonColor(btnCheckLibrary, false)
         }
     }
 
-    // Step 2: Check for DepthAI devices
-    private fun checkDevices() {
-        appendStatus("=== STEP 2: Checking for DepthAI Devices ===")
-        try {
-            val deviceCount = DepthAI.getDeviceCount()
-            appendStatus("Found $deviceCount DepthAI device(s)")
-
-            if (deviceCount > 0) {
-                for (i in 0 until deviceCount) {
-                    val deviceInfo = DepthAI.getDeviceInfo(i)
-                    appendStatus("Device $i: $deviceInfo")
-                }
-                appendStatus("✓ DepthAI devices detected\n")
-
-                btnCheckDevices.isEnabled = false
-                btnInitPipeline.isEnabled = true
-                setButtonColor(btnCheckDevices, true)
-            } else {
-                appendStatus("✗ No DepthAI devices found")
-                appendStatus("Please connect a DepthAI camera\n", true)
-                setButtonColor(btnCheckDevices, false)
-            }
-        } catch (e: Exception) {
-            appendStatus("✗ Error checking devices: ${e.message}\n", true)
-            setButtonColor(btnCheckDevices, false)
-        }
-    }
-
-    // Step 3: Initialize device and create pipeline
-    private fun initializePipeline() {
-        appendStatus("=== STEP 3: Initializing Pipeline ===")
-        try {
-            // Initialize the first device
-            deviceHandle = DepthAI.initializeDevice(0)
-
-            if (deviceHandle != 0L) {
-                appendStatus("✓ Device initialized (handle: $deviceHandle)")
-
-                // Create and start the pipeline
-                val started = DepthAI.startPipeline(deviceHandle)
-
-                if (started) {
-                    appendStatus("✓ Pipeline created and started")
-
-                    // Get frame dimensions
-                    val width = DepthAI.getFrameWidth(deviceHandle)
-                    val height = DepthAI.getFrameHeight(deviceHandle)
-                    appendStatus("✓ Frame size: ${width}x${height}\n")
-
-                    btnInitPipeline.isEnabled = false
-                    btnCheckUsbPermissions.isEnabled = true
-                    setButtonColor(btnInitPipeline, true)
-                } else {
-                    appendStatus("✗ Failed to start pipeline\n", true)
-                    setButtonColor(btnInitPipeline, false)
-                }
-            } else {
-                appendStatus("✗ Failed to initialize device\n", true)
-                setButtonColor(btnInitPipeline, false)
-            }
-        } catch (e: Exception) {
-            appendStatus("✗ Error initializing pipeline: ${e.message}\n", true)
-            setButtonColor(btnInitPipeline, false)
-        }
-    }
-
-    // Step 4: Check and request USB permissions
     private fun checkUsbPermissions() {
-        appendStatus("=== STEP 4: Checking USB Permissions ===")
+        appendStatus("=== Checking USB Permissions ===")
 
-        val depthAIDevices = usbPermissionManager.findDepthAIDevices()
-
-        if (depthAIDevices.isEmpty()) {
-            appendStatus("✗ No DepthAI USB devices found")
-            appendStatus("Please ensure device is connected via USB\n", true)
+        if (!usbPermissionManager.isUsbHostSupported()) {
+            appendStatus("✗ USB Host mode not supported on this device\n", true)
             setButtonColor(btnCheckUsbPermissions, false)
             return
         }
 
-        appendStatus("Found ${depthAIDevices.size} DepthAI USB device(s)")
+        appendStatus("✓ USB Host mode supported")
+
+        val oakDevices = usbPermissionManager.getConnectedOakDevices()
+
+        if (oakDevices.isEmpty()) {
+            appendStatus("✗ No OAK USB devices found")
+            appendStatus("Please connect an OAK camera via USB\n", true)
+            setButtonColor(btnCheckUsbPermissions, false)
+            return
+        }
+
+        appendStatus("Found ${oakDevices.size} OAK USB device(s)")
 
         var allPermissionsGranted = true
-        val devicesNeedingPermission = mutableListOf<UsbDevice>()
+        val devicesNeedingPermission = mutableListOf<android.hardware.usb.UsbDevice>()
 
-        for (device in depthAIDevices) {
-            appendStatus("Device: ${device.deviceName}")
+        for (device in oakDevices) {
+            appendStatus("\nDevice: ${device.deviceName}")
             appendStatus("  Vendor ID: 0x${device.vendorId.toString(16)}")
             appendStatus("  Product ID: 0x${device.productId.toString(16)}")
 
@@ -200,9 +246,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (allPermissionsGranted) {
-            appendStatus("✓ All USB permissions granted\n")
-            btnCheckUsbPermissions.isEnabled = false
-            btnStartRgbStream.isEnabled = true
+            appendStatus("\n✓ All USB permissions granted\n")
             setButtonColor(btnCheckUsbPermissions, true)
         } else {
             appendStatus("\nRequesting permissions for ${devicesNeedingPermission.size} device(s)...")
@@ -210,7 +254,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestPermissionsForDevices(devices: List<UsbDevice>) {
+    private fun requestPermissionsForDevices(devices: List<android.hardware.usb.UsbDevice>) {
         if (devices.isEmpty()) return
 
         val device = devices.first()
@@ -219,12 +263,9 @@ class MainActivity : AppCompatActivity() {
                 if (granted) {
                     appendStatus("✓ Permission granted for ${device.deviceName}")
 
-                    // Request permission for remaining devices
                     val remaining = devices.drop(1)
                     if (remaining.isEmpty()) {
-                        appendStatus("✓ All USB permissions granted\n")
-                        btnCheckUsbPermissions.isEnabled = false
-                        btnStartRgbStream.isEnabled = true
+                        appendStatus("\n✓ All USB permissions granted\n")
                         setButtonColor(btnCheckUsbPermissions, true)
                     } else {
                         requestPermissionsForDevices(remaining)
@@ -237,85 +278,106 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Step 5: Start RGB stream
-    private fun startRgbStream() {
-        appendStatus("=== STEP 5: Starting RGB Stream ===")
-
-        if (deviceHandle == 0L) {
-            appendStatus("✗ Device not initialized\n", true)
-            return
-        }
-
-        isStreaming = true
-        btnStartRgbStream.isEnabled = false
-        btnStopStream.isEnabled = true
-
-        appendStatus("✓ Starting RGB stream...")
-        appendStatus("Frames will appear below\n")
-
-        // Start streaming in background thread
-        streamExecutor = Executors.newSingleThreadScheduledExecutor()
-        streamExecutor?.scheduleAtFixedRate({
-            if (isStreaming) {
-                fetchAndDisplayFrame()
-            }
-        }, 0, 33, TimeUnit.MILLISECONDS) // ~30 FPS
-    }
-
-    private fun fetchAndDisplayFrame() {
+    private fun checkDevices() {
+        appendStatus("=== Checking for DepthAI Devices ===")
         try {
-            val frameData = DepthAI.getFrameRGB(deviceHandle)
+            val hasConnection = DepthAI.checkConnection()
 
-            if (frameData != null && frameData.isNotEmpty()) {
-                val width = DepthAI.getFrameWidth(deviceHandle)
-                val height = DepthAI.getFrameHeight(deviceHandle)
+            if (hasConnection) {
+                val deviceCount = DepthAI.getDeviceCount()
+                appendStatus("✓ Found $deviceCount device(s)")
 
-                // Convert byte array to Bitmap
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-
-                // Assuming RGB888 format from native code
-                val pixels = IntArray(width * height)
-                for (i in pixels.indices) {
-                    val idx = i * 3
-                    if (idx + 2 < frameData.size) {
-                        val r = frameData[idx].toInt() and 0xFF
-                        val g = frameData[idx + 1].toInt() and 0xFF
-                        val b = frameData[idx + 2].toInt() and 0xFF
-                        pixels[i] = Color.rgb(r, g, b)
-                    }
+                val deviceNames = DepthAI.getDeviceNames()
+                for ((index, name) in deviceNames.withIndex()) {
+                    appendStatus("  Device $index: $name")
                 }
-                bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
 
-                runOnUiThread {
-                    imageView.setImageBitmap(bitmap)
+                val devices = DepthAI.getAvailableDevices()
+                appendStatus("\nDetailed Information:")
+                for ((index, device) in devices.withIndex()) {
+                    appendStatus("Device $index:")
+                    appendStatus("  ID: ${device.deviceId}")
+                    appendStatus("  Name: ${device.name}")
+                    appendStatus("  Protocol: ${device.protocol}")
+                    appendStatus("  State: ${device.state}")
                 }
+
+                appendStatus("\n✓ DepthAI devices detected!\n")
+                setButtonColor(btnCheckDevices, true)
+            } else {
+                appendStatus("✗ No DepthAI devices found\n", true)
+                setButtonColor(btnCheckDevices, false)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching frame: ${e.message}", e)
+            appendStatus("✗ Error checking devices: ${e.message}\n", true)
+            appendStatus("Stack trace: ${e.stackTraceToString()}\n", true)
+            setButtonColor(btnCheckDevices, false)
+        }
+    }
+
+    private fun startStream() {
+        appendStatus("=== Attempting to Start Stream ===")
+
+        try {
+            // Get OAK device from USB manager
+            val oakDevices = usbPermissionManager.getConnectedOakDevices()
+
+            if (oakDevices.isEmpty()) {
+                appendStatus("✗ No OAK USB devices found\n", true)
+                return
+            }
+
+            val usbDevice = oakDevices[0]
+            appendStatus("Found device: ${usbDevice.deviceName}")
+            appendStatus("  Vendor: 0x${usbDevice.vendorId.toString(16)}")
+            appendStatus("  Product: 0x${usbDevice.productId.toString(16)}")
+
+            // Check permission
+            val usbManager = getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
+            if (!usbManager.hasPermission(usbDevice)) {
+                appendStatus("✗ No USB permission. Please grant permission first.\n", true)
+                return
+            }
+
+            appendStatus("\nAttempting to connect using Android USB API...")
+
+            // Create device connection
+            val deviceConnection = com.luxonis.depthai.DeviceConnection(this, usbDevice)
+
+            if (deviceConnection.connect()) {
+                appendStatus("✓ Device connected successfully!")
+                appendStatus("Handle: ${deviceConnection.getHandle()}")
+                appendStatus("\nDevice is now ready for operations")
+                appendStatus("(Streaming implementation coming next)\n")
+
+                btnStopStream.isEnabled = true
+
+                // Store connection for later use
+                // deviceConnection will be used for streaming
+
+            } else {
+                appendStatus("✗ Failed to connect to device", true)
+                appendStatus("Check logcat for details\n", true)
+            }
+
+        } catch (e: Exception) {
+            appendStatus("✗ Error: ${e.message}", true)
+            appendStatus("Stack: ${e.stackTraceToString()}\n", true)
         }
     }
 
     private fun stopStream() {
-        appendStatus("\n=== Stopping RGB Stream ===")
-        isStreaming = false
-
-        streamExecutor?.shutdown()
-        streamExecutor = null
-
+        appendStatus("=== Stopping Stream ===")
         btnStopStream.isEnabled = false
-        btnStartRgbStream.isEnabled = true
-
-        appendStatus("✓ Stream stopped\n")
+        appendStatus("Stream stopped (placeholder)\n")
     }
 
     // Helper methods
     private fun appendStatus(message: String, isError: Boolean = false) {
         runOnUiThread {
-            val color = if (isError) "#FF5252" else "#FFFFFF"
             val currentText = statusText.text.toString()
             statusText.text = "$currentText\n$message"
 
-            // Auto-scroll to bottom
             scrollView.post {
                 scrollView.fullScroll(ScrollView.FOCUS_DOWN)
             }
@@ -337,20 +399,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-
-        // Clean up
-        isStreaming = false
-        streamExecutor?.shutdown()
-
-        if (deviceHandle != 0L) {
-            try {
-                DepthAI.stopPipeline(deviceHandle)
-                DepthAI.closeDevice(deviceHandle)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error closing device", e)
-            }
-        }
-
-        usbPermissionManager.unregisterReceiver()
+        usbPermissionManager.cleanup()
     }
 }

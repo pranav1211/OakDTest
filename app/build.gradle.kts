@@ -63,10 +63,18 @@ android {
 }
 
 dependencies {
-    // Import the BoM for the Kotlin standard library
+    // Kotlin
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.0"))
-    // Define the dependency without the version (it will be inferred from the BoM)
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+
+    // AndroidX - Required for AppCompatActivity and other components
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+
+    // Material Design
     implementation("com.google.android.material:material:1.12.0")
-    implementation(project.files("libs/depthai-android.aar"))
+
+    // DepthAI AAR
+    implementation(files("libs/depthai-android.aar"))
 }
